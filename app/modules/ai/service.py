@@ -1,4 +1,4 @@
-from openai import OpenAI
+# from openai import OpenAI
 import os
 from app.models.question import Question
 from app.models.todo import Todo
