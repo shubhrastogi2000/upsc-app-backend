@@ -3,7 +3,7 @@ import os
 from app.models.question import Question
 from app.models.todo import Todo
 
-client = OpenAI(api_key = os.getenv("OPENAI_API_KEY"))
+#client = OpenAI(api_key = os.getenv("OPENAI_API_KEY"))
 
 def generate_and_store_questions(db, user_id: int, topics: list[str]):
     result = []
