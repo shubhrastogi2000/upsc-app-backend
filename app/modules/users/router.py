@@ -71,3 +71,18 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         user.password,
         user.exam_goal
     )
+
+@router.put("/goal")
+def update_daily_goal(
+    goal: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if goal <= 0:
+        raise HTTPException(status_code=400, detail="Goal must be positive")
+
+    current_user.daily_goal_minutes = goal
+    db.commit()
+    db.refresh(current_user)
+
+    return {"daily_goal_minutes": current_user.daily_goal_minutes}

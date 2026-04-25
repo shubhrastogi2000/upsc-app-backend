@@ -5,7 +5,7 @@ from app.models.todo import Todo
 
 #client = OpenAI(api_key = os.getenv("OPENAI_API_KEY"))
 
-def generate_and_store_questions(db, user_id: int, topics: list[str]):
+def generate_and_store_questions(db, user_id: int, todo_id: int, topics: list[str]):
     result = []
 
     for topic in topics:
@@ -26,6 +26,7 @@ def generate_and_store_questions(db, user_id: int, topics: list[str]):
         for q in questions:
             db_question = Question(
                 user_id=user_id,
+                todo_id=todo_id,  # 🔥 LINK TO TODO
                 topic=topic,
                 question_text=q,
                 is_solved=False

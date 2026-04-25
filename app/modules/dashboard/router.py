@@ -5,7 +5,7 @@ from app.core.auth import get_current_user
 from app.models.user import User
 from app.models.todo import Todo
 from app.models.question import Question
-from app.modules.study.service import get_today_study_time
+from app.modules.study.service import get_today_study_time, calculate_streak
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -34,10 +34,18 @@ def get_dashboard(
 
     study = get_today_study_time(db, user_id)
 
+    today_seconds = get_today_study_time(db, current_user.id)
+    today_minutes = today_seconds // 60
+
+    streak = calculate_streak(db, current_user.id, current_user.daily_goal_minutes)
+
     return {
         "total_todos": total_todos,
         "completed_todos": completed_todos,
         "total_questions": total_questions,
         "solved_questions": solved_questions,
-        "study_time_seconds": study
+        "study_time_seconds": study,
+        "today_progress_minutes": today_minutes,
+        "daily_goal_minutes": current_user.daily_goal_minutes,
+        "streak_days": streak
     }

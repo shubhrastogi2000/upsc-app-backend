@@ -7,6 +7,10 @@ class Question(Base):
 
     question_id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
+
+    # 🔥 NEW: LINK TO TODO
+    todo_id = Column(Integer, ForeignKey("todos.todo_id"), nullable=False)
+
     topic = Column(String, nullable=False)
     question_text = Column(String, nullable=False)
     is_solved = Column(Boolean, default=False, nullable=False)

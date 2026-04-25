@@ -11,4 +11,5 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     exam_goal = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-     
+    daily_goal_minutes = Column(Integer, default=120) # 2 hours per day
+    
