@@ -9,3 +9,7 @@ class UserCreate(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+class GoalUpdate(BaseModel):
+    exam_goal: str
+    daily_goal_minutes: int

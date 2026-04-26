@@ -18,6 +18,8 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)):
     token = credentials.credentials
+    if token is None:
+        raise HTTPException(status_code=401)
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email = payload.get("sub")
