@@ -2,16 +2,28 @@
 import os
 from app.models.question import Question
 from app.models.todo import Todo
+from app.models.user import User
 
 #client = OpenAI(api_key = os.getenv("OPENAI_API_KEY"))
 
 def generate_and_store_questions(db, user_id: int, todo_id: int, topics: list[str]):
     result = []
+    
+    existing = db.query(Question).filter(
+        Question.todo_id == todo_id,
+        Question.user_id == user_id
+    ).first()
+    if existing:
+        return result
+    
+    user = db.query(User).filter(User.id == user_id).first()
+    exam = user.exam_goal or "General"
+    difficulties = ["easy", "medium", "hard"]
 
     for topic in topics:
         questions = [
             f"Discuss the key features of {topic}.",
-            f"Analyze the importance of {topic} in UPSC syllabus.",
+            f"Analyze the importance of {topic} in {exam} examination.",
             f"What are the major challenges related to {topic}?",
             f"Explain {topic} with suitable examples.",
             f"Write a short note on {topic}.",
@@ -21,14 +33,14 @@ def generate_and_store_questions(db, user_id: int, todo_id: int, topics: list[st
             f"Compare {topic} with related concepts.",
             f"Discuss the relevance of {topic} in current affairs."
         ]
-
-        # Store in DB
-        for q in questions:
+        
+        for i, q in enumerate(questions):
             db_question = Question(
                 user_id=user_id,
-                todo_id=todo_id,  # 🔥 LINK TO TODO
+                todo_id=todo_id,
                 topic=topic,
                 question_text=q,
+                difficulty=difficulties[i % 3],   # 🔥 add this
                 is_solved=False
             )
             db.add(db_question)
@@ -51,7 +63,7 @@ def get_questions_by_todo(db, todo_id: int):
 
     # 🔹 Step 2: fetch questions using topic match
     questions = db.query(Question).filter(
-        Question.topic == todo.title,
+        Question.todo_id == todo_id,
         Question.user_id == todo.user_id
     ).all()
 
@@ -60,7 +72,8 @@ def get_questions_by_todo(db, todo_id: int):
         {
             "id": q.question_id,
             "question": q.question_text,
-            "is_solved": q.is_solved
+            "is_solved": q.is_solved,
+            "difficulty": q.difficulty 
         }
         for q in questions
     ]

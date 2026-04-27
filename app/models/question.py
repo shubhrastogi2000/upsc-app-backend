@@ -10,6 +10,7 @@ class Question(Base):
 
     # 🔥 NEW: LINK TO TODO
     todo_id = Column(Integer, ForeignKey("todos.todo_id"), nullable=False)
+    difficulty = Column(String, default="medium")
 
     topic = Column(String, nullable=False)
     question_text = Column(String, nullable=False)
