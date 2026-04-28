@@ -41,9 +41,6 @@ def get_summary(db, user_id: int):
         "today_study_minutes_seconds": total_seconds // 60
     }
 def get_weak_topics(db, user_id: int):
-    from app.models.question import Question
-    from sqlalchemy import func, case
-
     data = db.query(
         Question.topic,
         func.count(Question.question_id).label("total"),
@@ -74,10 +71,6 @@ def get_weak_topics(db, user_id: int):
     return weak_topics
 
 def get_study_recommendations(db, user_id: int):
-    from app.models.question import Question
-    from sqlalchemy import func, case
-
-    # 1. Calculate weakness
     rows = db.query(
         Question.topic,
         func.count(Question.question_id).label("total"),
@@ -88,27 +81,79 @@ def get_study_recommendations(db, user_id: int):
         Question.user_id == user_id
     ).group_by(Question.topic).all()
 
-    topics = []
+    suggestions = []
+
     for r in rows:
         if not r.total:
             continue
 
-        ratio = (r.solved or 0) / r.total
+        solved = r.solved or 0
+        ratio = solved / r.total
 
-        topics.append({
-            "topic": r.topic,
-            "weakness": 1 - ratio
-        })
+        # 🔥 Decide difficulty + action
+        if ratio < 0.3:
+            action = "Revise basics"
+            difficulty = "easy"
+            time = 20
+            questions = 3
 
-    # 2. Sort by weakest first
-    topics = sorted(topics, key=lambda x: x["weakness"], reverse=True)
+        elif ratio < 0.7:
+            action = "Practice questions"
+            difficulty = "medium"
+            time = 25
+            questions = 5
 
-    # 3. Pick top 3
-    suggestions = []
-    for t in topics[:3]:
+        else:
+            action = "Challenge yourself"
+            difficulty = "hard"
+            time = 30
+            questions = 7
+
         suggestions.append({
-            "topic": t["topic"],
-            "reason": "Weak area"
+            "topic": r.topic,
+            "action": action,
+            "difficulty": difficulty,
+            "time": time,
+            "questions": questions
         })
 
-    return suggestions
+    # Sort weakest first
+    suggestions = sorted(suggestions, key=lambda x: x["difficulty"])
+
+    return suggestions[:3]
+
+    # 1. Calculate weakness
+    # rows = db.query(
+    #     Question.topic,
+    #     func.count(Question.question_id).label("total"),
+    #     func.sum(
+    #         case((Question.is_solved == True, 1), else_=0)
+    #     ).label("solved")
+    # ).filter(
+    #     Question.user_id == user_id
+    # ).group_by(Question.topic).all()
+
+    # topics = []
+    # for r in rows:
+    #     if not r.total:
+    #         continue
+
+    #     ratio = (r.solved or 0) / r.total
+
+    #     topics.append({
+    #         "topic": r.topic,
+    #         "weakness": 1 - ratio
+    #     })
+
+    # # 2. Sort by weakest first
+    # topics = sorted(topics, key=lambda x: x["weakness"], reverse=True)
+
+    # # 3. Pick top 3
+    # suggestions = []
+    # for t in topics[:3]:
+    #     suggestions.append({
+    #         "topic": t["topic"],
+    #         "reason": "Weak area"
+    #     })
+
+    # return suggestions
