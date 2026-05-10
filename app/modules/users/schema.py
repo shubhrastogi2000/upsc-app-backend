@@ -13,3 +13,12 @@ class UserLogin(BaseModel):
 class GoalUpdate(BaseModel):
     exam_goal: str
     daily_goal_minutes: int
+
+class UserResponse(BaseModel):
+    id: int
+    name: str
+    email : EmailStr
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str

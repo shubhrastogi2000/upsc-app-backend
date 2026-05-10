@@ -5,35 +5,40 @@ from app.core.database import get_db
 from app.core.auth import get_current_user
 from app.models.user import User
 
-from app.modules.users.schema import UserCreate, UserLogin, GoalUpdate
+from app.modules.users.schema import (
+    UserCreate, UserLogin, GoalUpdate, UserResponse, TokenResponse
+)
 from app.modules.users import service
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
 # ------------------ Create User ------------------ #
-@router.post("/")
-def create_user_endpoint(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = service.create_user(
-        db=db,
-        name=user.name,
-        email=user.email,
-        password=user.password,
-        exam_goal=user.exam_goal
-    )
+# @router.post("/")
+# def create_user_endpoint(user: UserCreate, db: Session = Depends(get_db)):
+#     db_user = service.create_user(
+#         db=db,
+#         name=user.name,
+#         email=user.email,
+#         password=user.password,
+#         exam_goal=user.exam_goal
+#     )
 
-    if not db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+#     if not db_user:
+#         raise HTTPException(status_code=400, detail="Email already registered")
 
-    return {
-        "id": db_user.id,
-        "name": db_user.name,
-        "email": db_user.email
-    }
+#     return {
+#         "id": db_user.id,
+#         "name": db_user.name,
+#         "email": db_user.email
+#     }
 
 
 # ------------------ Login ------------------ #
-@router.post("/login")
+@router.post(
+    "/login",
+    response_model=TokenResponse
+)
 def login(user: UserLogin, db: Session = Depends(get_db)):
     token = service.login_user(db, user.email, user.password)
 
@@ -63,14 +68,27 @@ def get_me(current_user: User = Depends(get_current_user)):
         "daily_goal_minutes": current_user.daily_goal_minutes
     }
 
-@router.post("/register")
-def register(user: UserCreate, db: Session = Depends(get_db)):
-    return service.create_user(
+# ------------------ Create/Register User ------------------ #
+@router.post(
+    "/register",
+    response_model=UserResponse
+)
+def register(
+    user: UserCreate, 
+    db: Session = Depends(get_db)
+):
+    db_user = service.create_user(
         db, 
-        user.name,
-        user.email,
-        user.password,
-        user.exam_goal
+        name = user.name,
+        email = user.email,
+        password = user.password,
+        exam_goal = user.exam_goal
+    )
+
+    return UserResponse(
+        id = db_user.id,
+        name = db_user.name,
+        email = db_user.email
     )
 
 @router.put("/goal")
@@ -92,20 +110,3 @@ def update_goal(
         "exam_goal": current_user.exam_goal,
         "daily_goal_minutes": current_user.daily_goal_minutes
     }
-
-
-
-# @router.put("/goal")
-# def update_daily_goal(
-#     goal: int,
-#     current_user: User = Depends(get_current_user),
-#     db: Session = Depends(get_db)
-# ):
-#     if goal <= 0:
-#         raise HTTPException(status_code=400, detail="Goal must be positive")
-
-#     current_user.daily_goal_minutes = goal
-#     db.commit()
-#     db.refresh(current_user)
-
-#     return {"daily_goal_minutes": current_user.daily_goal_minutes}

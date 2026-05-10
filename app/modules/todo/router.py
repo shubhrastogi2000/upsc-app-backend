@@ -1,3 +1,26 @@
+# ------------------------------------------------------------
+# Todo Router
+# ------------------------------------------------------------
+#
+# Responsibility:
+# - HTTP request handling
+# - authentication dependency injection
+# - request/response mapping
+#
+# Router should NOT contain:
+# - DB queries
+# - business rules
+# - lifecycle orchestration
+#
+# WHY?
+# To keep business logic centralized in service layer.
+#
+# This follows:
+# - Separation of Concerns
+# - Controller-Service architecture
+# ------------------------------------------------------------
+
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -29,7 +52,8 @@ def get_todos(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    return db.query(Todo).filter(Todo.user_id == current_user.id).all()
+    return service.get_todos(db, current_user.id)
+    # return db.query(Todo).filter(Todo.user_id == current_user.id).all()
 
 
 # 🔥 MARK COMPLETE (FIXED ROUTE)
@@ -39,19 +63,27 @@ def mark_complete(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    todo = db.query(Todo).filter(
-        Todo.todo_id == todo_id,
-        Todo.user_id == current_user.id
-    ).first()
+    todo = service.mark_complete(db, current_user.id, todo_id)
 
     if not todo:
-        raise HTTPException(status_code=404, detail="Todo not found")
-
-    todo.is_completed = True
-    db.commit()
-    db.refresh(todo)
-
+        raise HTTPException(
+            status_code=404,
+            detail = "Todo Not Found"
+        )
     return todo
+    # todo = db.query(Todo).filter(
+    #     Todo.todo_id == todo_id,
+    #     Todo.user_id == current_user.id
+    # ).first()
+
+    # if not todo:
+    #     raise HTTPException(status_code=404, detail="Todo not found")
+
+    # todo.is_completed = True
+    # db.commit()
+    # db.refresh(todo)
+
+    # return todo
 
 
 # 🔥 EDIT TODO (FIXED ROUTE)
@@ -62,31 +94,46 @@ def edit_todo(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    todo = db.query(Todo).filter(
-        Todo.todo_id == todo_id,
-        Todo.user_id == current_user.id
-    ).first()
 
-    if not todo:
-        raise HTTPException(status_code=404, detail="Todo not found")
-
-    # update title
-    todo.title = title
-    db.commit()
-    db.refresh(todo)
-
-    # 🔥 DELETE OLD QUESTIONS
-    db.query(Question).filter(Question.todo_id == todo_id).delete()
-
-    # 🔥 REGENERATE QUESTIONS
-    service.generate_and_store_questions(
-        db,
-        current_user.id,
-        todo.todo_id,
-        [title]
+    updated = service.update_todo(
+        db=db,
+        todo_id=todo_id,
+        user_id=current_user.id,
+        new_title=title,
     )
 
-    return todo
+    if not updated:
+        raise HTTPException(
+            status_code=404,
+            detail="Todo not found"
+        )
+
+    return updated
+    # todo = db.query(Todo).filter(
+    #     Todo.todo_id == todo_id,
+    #     Todo.user_id == current_user.id
+    # ).first()
+
+    # if not todo:
+    #     raise HTTPException(status_code=404, detail="Todo not found")
+
+    # # update title
+    # todo.title = title
+    # db.commit()
+    # db.refresh(todo)
+
+    # # 🔥 DELETE OLD QUESTIONS
+    # db.query(Question).filter(Question.todo_id == todo_id).delete()
+
+    # # 🔥 REGENERATE QUESTIONS
+    # service.generate_and_store_questions(
+    #     db,
+    #     current_user.id,
+    #     todo.todo_id,
+    #     [title]
+    # )
+
+    # return todo
 
 
 # 🔥 DELETE TODO (FIXED)
@@ -96,18 +143,26 @@ def delete_todo(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    todo = db.query(Todo).filter(
-        Todo.todo_id == todo_id,
-        Todo.user_id == current_user.id
-    ).first()
+    result = service.delete_todo(
+        db, current_user.id, todo_id
+    )
+    if not result:
+        raise HTTPException(
+            status_code=404, detail = "Todo Not Found"
+        )
+    return result
+    # todo = db.query(Todo).filter(
+    #     Todo.todo_id == todo_id,
+    #     Todo.user_id == current_user.id
+    # ).first()
 
-    if not todo:
-        raise HTTPException(status_code=404, detail="Todo not found")
+    # if not todo:
+    #     raise HTTPException(status_code=404, detail="Todo not found")
 
-    # 🔥 DELETE RELATED QUESTIONS
-    db.query(Question).filter(Question.todo_id == todo_id).delete()
+    # # 🔥 DELETE RELATED QUESTIONS
+    # db.query(Question).filter(Question.todo_id == todo_id).delete()
 
-    db.delete(todo)
-    db.commit()
+    # db.delete(todo)
+    # db.commit()
 
-    return {"message": "Todo deleted"}
+    # return {"message": "Todo deleted"}
